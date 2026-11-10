@@ -1,0 +1,26 @@
+# dependencies
+node_modules
+
+# next.js
+.next
+out
+next-env.d.ts
+
+# environment (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# local data (embedded dev database, local uploads)
+.data
+
+# tests
+coverage
+playwright-report
+test-results
+
+# misc
+.DS_Store
+*.log
+*.tsbuildinfo
+.vercel

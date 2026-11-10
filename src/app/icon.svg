@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Oops, I Traveled Again! pin">
+  <rect width="64" height="64" rx="16" fill="#164f68"/>
+  <path d="M32 8c-9 0-16 7-16 15.6C16 35 32 54 32 54s16-19 16-30.4C48 15 41 8 32 8z" fill="#fa6b4a" stroke="#f8f4eb" stroke-width="3"/>
+  <circle cx="32" cy="24" r="6.5" fill="#f8f4eb"/>
+  <path d="M10 50c8-5 16 1 24-3" fill="none" stroke="#f2c66d" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="1 5"/>
+</svg>

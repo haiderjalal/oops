@@ -1,0 +1,13 @@
+.next
+node_modules
+.data
+drizzle
+public/data
+package-lock.json
+playwright-report
+test-results
+coverage
+# Owner-provided files — not reformatted automatically.
+CLAUDE.md
+CLAUDE_START_PROMPT.md
+index.html

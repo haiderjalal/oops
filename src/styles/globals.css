@@ -1,0 +1,405 @@
+@import "tailwindcss";
+
+/*
+ * Design system — "retro explorer's scrapbook + premium digital atlas".
+ * Palette comes from the project spec; the *-deep variants exist so small text keeps
+ * WCAG AA contrast (coral itself is for large display type, pins and fills only).
+ * Contrast pairs are verified in src/tests/unit/contrast.test.ts.
+ */
+@theme {
+  --color-parchment: #f8f4eb;
+  --color-parchment-deep: #efe6d3;
+  --color-paper: #fffdf8;
+  --color-ink: #202c37;
+  --color-ink-soft: #3f4e59;
+  --color-ink-muted: #55646e;
+  --color-ocean: #164f68;
+  --color-ocean-deep: #0d3447;
+  --color-ocean-mid: #2a6f8f;
+  --color-coral: #fa6b4a;
+  --color-coral-deep: #b83a17;
+  --color-sunrise: #f2c66d;
+  --color-sunrise-deep: #7a5610;
+  --color-lavender: #a8a4e6;
+  --color-lavender-deep: #54509f;
+  --color-line: #e0d5bf;
+  --color-success: #1f6b4a;
+  --color-danger: #a8261c;
+
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-postcard: 1.25rem;
+  --radius-card: 1.5rem;
+
+  --shadow-postcard: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 12px 32px -14px rgb(32 44 55 / 0.28);
+  --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 18px 40px -14px rgb(32 44 55 / 0.35);
+  --shadow-float: 0 10px 28px -8px rgb(9 44 65 / 0.45);
+
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --breakpoint-xs: 30rem;
+}
+
+:root {
+  color-scheme: light;
+  --header-height: 4rem;
+  /* Paper grain: an inline SVG noise tile, rasterised once. */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .2 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@layer base {
+  html {
+    background: var(--color-parchment);
+    scroll-padding-top: calc(var(--header-height) + 1rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--color-parchment);
+    background-image: var(--paper-grain);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    font-variation-settings:
+      "SOFT" 100,
+      "WONK" 1;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  /* Focus must be visible against both parchment (ocean ring) and dark surfaces (sunrise ring). */
+  :focus-visible {
+    outline: 3px solid var(--color-ocean);
+    outline-offset: 3px;
+    border-radius: 0.375rem;
+  }
+
+  .on-dark :focus-visible {
+    outline-color: var(--color-sunrise);
+  }
+
+  ::selection {
+    background: var(--color-sunrise);
+    color: var(--color-ink);
+  }
+
+  img,
+  svg {
+    max-width: 100%;
+  }
+
+  /* Native dialogs: contain scroll so the page behind never moves (see web guidance: dialog). */
+  dialog:modal {
+    overscroll-behavior: contain;
+  }
+  dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background: rgb(13 52 71 / 0.62);
+    backdrop-filter: blur(3px);
+  }
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility tap-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+@layer components {
+  /* ── Postcard surface: white card with an airmail edge ─────────────────────────────── */
+  .postcard {
+    position: relative;
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-postcard);
+    box-shadow: var(--shadow-postcard);
+  }
+
+  .airmail {
+    position: relative;
+  }
+  .airmail::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 6px;
+    border-radius: var(--radius-postcard) var(--radius-postcard) 0 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--color-coral) 0 12px,
+      var(--color-paper) 12px 20px,
+      var(--color-ocean) 20px 32px,
+      var(--color-paper) 32px 40px
+    );
+  }
+
+  /* Washi tape pieces holding photos down. Purely decorative. */
+  .tape {
+    position: absolute;
+    width: 5.5rem;
+    height: 1.5rem;
+    background: color-mix(in oklab, var(--color-sunrise) 78%, white);
+    opacity: 0.92;
+    box-shadow: 0 1px 2px rgb(32 44 55 / 0.18);
+    mask-image: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 7px);
+    mask-composite: add;
+    pointer-events: none;
+  }
+
+  /* Boarding-pass notches on the left and right edges. */
+  .ticket {
+    mask:
+      radial-gradient(circle 11px at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle 11px at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+  }
+
+  .oops-hover .maplibregl-popup-content {
+    background: var(--color-ink);
+    color: var(--color-parchment);
+    font: 700 0.8rem/1.2 var(--font-sans);
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    box-shadow: var(--shadow-float);
+  }
+  .oops-hover.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+    border-top-color: var(--color-ink);
+  }
+
+  /* Dashed travel path used as a divider. */
+  .dashed-path {
+    height: 0;
+    border-top: 3px dashed color-mix(in oklab, var(--color-coral) 70%, transparent);
+  }
+
+  /* ── Long-form story typography (markdown output) ──────────────────────────────────── */
+  .story {
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    color: var(--color-ink-soft);
+  }
+  .story > * + * {
+    margin-top: 1.1em;
+  }
+  .story h2,
+  .story h3 {
+    margin-top: 1.8em;
+    color: var(--color-ink);
+  }
+  .story h2 {
+    font-size: 1.75rem;
+  }
+  .story h3 {
+    font-size: 1.35rem;
+  }
+  .story strong {
+    color: var(--color-ink);
+  }
+  .story a {
+    color: var(--color-coral-deep);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .story blockquote {
+    border-left: 4px solid var(--color-sunrise);
+    background: color-mix(in oklab, var(--color-sunrise) 18%, transparent);
+    padding: 0.75rem 1rem;
+    border-radius: 0 0.75rem 0.75rem 0;
+    font-size: 0.95rem;
+    color: var(--color-ink-soft);
+  }
+  .story ul,
+  .story ol {
+    padding-left: 1.4em;
+  }
+  .story ul {
+    list-style: "✦  ";
+  }
+  .story ol {
+    list-style: decimal;
+  }
+  .story li + li {
+    margin-top: 0.4em;
+  }
+  .story-lede > p:first-child::first-letter {
+    float: left;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 4.2rem;
+    line-height: 0.82;
+    padding: 0.35rem 0.6rem 0 0;
+    color: var(--color-coral-deep);
+  }
+
+  /* ── Map stage ─────────────────────────────────────────────────────────────────────── */
+  .map-stage {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    border: 5px solid var(--color-paper);
+    box-shadow: var(--shadow-lift);
+    background:
+      radial-gradient(1.5px 1.5px at 12% 18%, rgb(255 255 255 / 0.7), transparent 60%),
+      radial-gradient(1px 1px at 78% 12%, rgb(255 255 255 / 0.6), transparent 60%),
+      radial-gradient(1.5px 1.5px at 88% 74%, rgb(255 255 255 / 0.6), transparent 60%),
+      radial-gradient(1px 1px at 22% 82%, rgb(255 255 255 / 0.5), transparent 60%),
+      radial-gradient(1px 1px at 52% 6%, rgb(255 255 255 / 0.5), transparent 60%),
+      radial-gradient(ellipse at 40% 35%, #25688a 0%, #0d3447 70%);
+  }
+
+  .maplibregl-map {
+    font-family: var(--font-sans);
+  }
+  /* Keep the licensed-provider attribution legible but out of the way. Never hide it. */
+  .maplibregl-ctrl-attrib {
+    font-size: 0.7rem;
+    background: rgb(255 253 248 / 0.88) !important;
+    border-radius: 0.5rem 0 0 0;
+  }
+  .maplibregl-ctrl-attrib a {
+    color: var(--color-ocean) !important;
+  }
+  .maplibregl-canvas {
+    outline-offset: -3px;
+  }
+}
+
+/* ── Motion (opt-in, opacity/transform only) ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes wobble {
+    0%,
+    100% {
+      transform: rotate(var(--tilt, -3deg));
+    }
+    50% {
+      transform: rotate(calc(var(--tilt, -3deg) + 2.5deg));
+    }
+  }
+
+  .animate-rise {
+    animation: rise-in 0.6s var(--ease-soft) both;
+  }
+  .animate-rise-delay-1 {
+    animation-delay: 0.08s;
+  }
+  .animate-rise-delay-2 {
+    animation-delay: 0.16s;
+  }
+  .animate-sheet-in {
+    animation: sheet-in 0.32s var(--ease-soft) both;
+  }
+  .animate-panel-in {
+    animation: panel-in 0.32s var(--ease-soft) both;
+  }
+  .animate-wobble {
+    animation: wobble 5s ease-in-out infinite;
+  }
+
+  .lift {
+    transition:
+      transform 0.25s var(--ease-soft),
+      box-shadow 0.25s var(--ease-soft);
+  }
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift);
+  }
+
+  /* Scroll-driven reveal. Content is fully visible by default; this only enhances. */
+  @supports (animation-timeline: view()) {
+    @keyframes reveal {
+      from {
+        opacity: 0;
+        transform: translateY(26px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+}
+
+@media print {
+  body {
+    background: white;
+  }
+}
