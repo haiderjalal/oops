@@ -5,6 +5,7 @@ import type { ZodType } from "zod";
 import { assertOwner, type OwnerSession } from "@/lib/auth/session";
 import { type ActionResult, AppError, actionError, actionOk } from "@/lib/errors";
 import { logger } from "@/lib/logger";
+import { logSecurityEvent } from "@/lib/security-log";
 
 /** Maps Zod issues to `{ "photos.0.alt": ["message"] }` so forms can show errors beside fields. */
 export function fieldErrorsOf(
@@ -43,7 +44,13 @@ export async function runOwnerAction<TSchema extends ZodType, TResult>(options: 
     return actionOk(await options.handler(parsed.data, session));
   } catch (error) {
     if (error instanceof AppError) {
-      if (error.code !== "validation" && error.code !== "conflict" && error.code !== "not_found") {
+      if (error.code === "unauthorized") {
+        logSecurityEvent("owner_action.refused", { action: options.name });
+      } else if (
+        error.code !== "validation" &&
+        error.code !== "conflict" &&
+        error.code !== "not_found"
+      ) {
         logger.warn(`${options.name} refused`, { code: error.code });
       }
       return actionError(error.userMessage);

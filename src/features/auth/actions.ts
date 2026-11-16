@@ -9,6 +9,7 @@ import { verifyTotp } from "@/lib/auth/totp";
 import { logger } from "@/lib/logger";
 import { getRateLimiter } from "@/lib/rate-limit";
 import { getClientAddress } from "@/lib/request";
+import { logSecurityEvent } from "@/lib/security-log";
 
 import { loginSchema } from "./schema";
 
@@ -48,11 +49,15 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
 
   const address = await getClientAddress();
   const email = parsed.data.email.toLowerCase();
+  const emailMatches = email === config.ownerEmail?.toLowerCase();
+
   const addressCheck = perAddress().check(address);
-  const emailCheck = perEmail().check(email);
+  // Only the owner's address is counted per email. Otherwise anyone could fill the counter with random
+  // addresses and evict the owner's count. Other addresses are still limited per client address.
+  const emailCheck = emailMatches ? perEmail().check(email) : { ok: true, retryAfterSeconds: 0 };
   if (!addressCheck.ok || !emailCheck.ok) {
     const wait = Math.max(addressCheck.retryAfterSeconds, emailCheck.retryAfterSeconds);
-    logger.warn("Owner sign-in rate limited", { address });
+    logSecurityEvent("login.rate_limited", { address });
     return {
       error: `Too many attempts. Please wait ${Math.ceil(wait / 60)} minute(s) and try again.`,
       email: typedEmail,
@@ -60,7 +65,6 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
   }
 
   // Always do the expensive hash comparison, even for a wrong email, so timing leaks nothing.
-  const emailMatches = email === config.ownerEmail?.toLowerCase();
   const passwordOk = await verifyPassword(
     parsed.data.password,
     emailMatches ? (config.passwordHash ?? "") : await getDummyHash(),
@@ -75,7 +79,7 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
   }
 
   if (!emailMatches || !passwordOk || !codeOk) {
-    logger.warn("Owner sign-in failed", { address });
+    logSecurityEvent("login.failed", { address });
     return { error: GENERIC_FAILURE, needsCode: mfaRequired, email: typedEmail };
   }
 

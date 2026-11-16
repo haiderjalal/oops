@@ -1,13 +1,12 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { z } from "zod";
 
 import { getDb } from "@/lib/db/client";
 import type { ActionResult } from "@/lib/errors";
 import { runOwnerAction } from "@/lib/actions";
 
-import { CACHE_TAGS } from "@/features/places/cacheTags";
+import { invalidatePublicContent } from "@/features/places/revalidatePublic";
 
 import { bucketItemInputSchema } from "./schema";
 import { createBucketItem, removeBucketItem, updateBucketItem } from "./service";
@@ -26,7 +25,7 @@ export async function saveBucketItemAction(
       const saved = id
         ? await updateBucketItem(db, id, values)
         : await createBucketItem(db, values);
-      updateTag(CACHE_TAGS.bucket);
+      invalidatePublicContent();
       return saved;
     },
   });
@@ -39,7 +38,7 @@ export async function deleteBucketItemAction(payload: unknown): Promise<ActionRe
     input: payload,
     handler: async ({ id }) => {
       await removeBucketItem(await getDb(), id);
-      updateTag(CACHE_TAGS.bucket);
+      invalidatePublicContent();
       return undefined;
     },
   });

@@ -3,6 +3,7 @@ import postgres from "postgres";
 
 import type { Database } from "../../src/lib/db/client";
 import * as schema from "../../src/lib/db/schema";
+import { databaseSsl } from "../../src/lib/db/ssl";
 
 /** Opens a Drizzle connection for CLI scripts (no Next.js, no `server-only`). */
 export function connect(): { db: Database; close: () => Promise<void> } {
@@ -11,6 +12,11 @@ export function connect(): { db: Database; close: () => Promise<void> } {
     console.error("DATABASE_URL is not set. Add it to .env.local (see .env.example).");
     process.exit(1);
   }
-  const client = postgres(url, { max: 1, prepare: false, connect_timeout: 10 });
+  const client = postgres(url, {
+    max: 1,
+    prepare: false,
+    connect_timeout: 10,
+    ssl: databaseSsl(url),
+  });
   return { db: drizzle({ client, schema }) as unknown as Database, close: () => client.end() };
 }

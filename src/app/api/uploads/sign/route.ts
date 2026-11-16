@@ -6,6 +6,7 @@ import { AppError, RateLimitError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { getRateLimiter } from "@/lib/rate-limit";
 import { assertSameOrigin } from "@/lib/request";
+import { logSecurityEvent } from "@/lib/security-log";
 import { getStorage } from "@/lib/storage";
 import { requestUpload } from "@/features/uploads/service";
 import { signRequestSchema } from "@/features/uploads/validation";
@@ -19,14 +20,18 @@ export async function POST(request: Request) {
     const session = await assertOwner();
 
     const check = limiter().check(session.email);
-    if (!check.ok)
+    if (!check.ok) {
+      logSecurityEvent("upload.rate_limited");
       throw new RateLimitError(
         check.retryAfterSeconds,
         "That's a lot of uploads — try again shortly.",
       );
+    }
 
     const parsed = signRequestSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
+      // A request for a file type or size we never accept is worth recording (e.g. an SVG or HTML file).
+      logSecurityEvent("upload.rejected", { reason: "not_allowed_type_or_size" });
       return NextResponse.json(
         { error: parsed.error.issues[0]?.message ?? "Invalid upload request." },
         { status: 400 },

@@ -12,7 +12,9 @@ export async function GET() {
   return NextResponse.json(placesToGeoJson(places), {
     headers: {
       "Content-Type": "application/geo+json",
-      "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+      // Short CDN window: an unpublished or deleted place must not stay fetchable for long. Stale
+      // copies are not served while revalidating, because that would keep them alive after removal.
+      "Cache-Control": "public, s-maxage=300",
     },
   });
 }

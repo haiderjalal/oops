@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 
 import { getAuthConfig, getSiteConfig } from "@/lib/config";
 import { ConfigError, UnauthorizedError } from "@/lib/errors";
+import { logSecurityEvent } from "@/lib/security-log";
 
 /**
  * Owner sessions: an HS256-signed JWT in an HttpOnly, SameSite=Lax cookie.
@@ -37,10 +38,15 @@ function secretKey(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
+/**
+ * Changing the password or the authenticator secret changes this value, which signs out every
+ * existing session. Without the authenticator secret, a session stolen before a re-enrolment would
+ * stay valid for its full lifetime.
+ */
 function sessionVersion(): string {
-  const { passwordHash } = getAuthConfig();
+  const { passwordHash, totpSecret } = getAuthConfig();
   return createHash("sha256")
-    .update(passwordHash ?? "")
+    .update(`${passwordHash ?? ""}\n${totpSecret ?? ""}`)
     .digest("hex")
     .slice(0, 16);
 }
@@ -102,7 +108,12 @@ export async function clearSessionCookie(): Promise<void> {
 /** The signed-in owner, or null. Safe to call anywhere on the server. */
 export async function getOwnerSession(): Promise<OwnerSession | null> {
   const token = (await cookies()).get(cookieName())?.value;
-  return token ? verifySessionToken(token) : null;
+  if (!token) return null;
+  const session = await verifySessionToken(token);
+  // A cookie that is present but fails verification is forged, expired, or from before a password
+  // change. Record it, but never record the token itself.
+  if (!session) logSecurityEvent("session.invalid");
+  return session;
 }
 
 /** For pages and layouts: send visitors to the sign-in page. */

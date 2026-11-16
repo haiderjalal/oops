@@ -5,6 +5,8 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
+import { databaseSsl } from "../src/lib/db/ssl";
+
 async function main(): Promise<void> {
   const url = process.env.DATABASE_URL;
   if (!url) {
@@ -12,7 +14,12 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const client = postgres(url, { max: 1, prepare: false, connect_timeout: 10 });
+  const client = postgres(url, {
+    max: 1,
+    prepare: false,
+    connect_timeout: 10,
+    ssl: databaseSsl(url),
+  });
   try {
     await migrate(drizzle({ client }), { migrationsFolder: path.resolve("drizzle") });
     console.log("✓ Migrations applied.");

@@ -11,6 +11,7 @@ import { ConfigError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 
 import { createEmbeddedDatabase } from "./embedded";
+import { databaseSsl } from "./ssl";
 import * as schema from "./schema";
 import { seedDemoContent } from "./seed-demo";
 
@@ -44,6 +45,7 @@ async function createDatabase(): Promise<Database> {
       prepare: false,
       idle_timeout: 20,
       connect_timeout: 10,
+      ssl: databaseSsl(config.url),
     });
     return drizzle({ client, schema }) as unknown as Database;
   }

@@ -23,7 +23,8 @@
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed-demo.ts",
     "db:purge-demo": "tsx --env-file-if-exists=.env.local scripts/purge-demo.ts",
     "setup:owner": "tsx scripts/setup-owner.ts",
-    "data:atlas": "tsx scripts/build-atlas-data.ts"
+    "data:atlas": "tsx scripts/build-atlas-data.ts",
+    "check:env": "tsx --env-file-if-exists=.env.local scripts/check-env.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1165.0",
@@ -57,8 +58,6 @@
     "@playwright/test": "^1.65.0",
     "@tailwindcss/turbopack": "4.3.5",
     "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.9",
     "@types/d3-geo": "^3.1.1",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24",
@@ -78,5 +77,10 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.8"
+    }
   }
 }
