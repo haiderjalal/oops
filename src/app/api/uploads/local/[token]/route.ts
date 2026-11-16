@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getStorageConfig } from "@/lib/config";
 import { logger } from "@/lib/logger";
+import { logSecurityEvent } from "@/lib/security-log";
 import { getStorage } from "@/lib/storage";
 import { verifyUploadToken } from "@/lib/storage/uploadToken";
 import { MAX_UPLOAD_BYTES } from "@/features/uploads/validation";
@@ -16,11 +17,13 @@ export async function PUT(request: Request, context: { params: Promise<{ token: 
 
   const { token } = await context.params;
   const claims = await verifyUploadToken(token);
-  if (!claims)
+  if (!claims) {
+    logSecurityEvent("upload.rejected", { reason: "invalid_or_expired_token" });
     return NextResponse.json(
       { error: "This upload link is invalid or has expired." },
       { status: 403 },
     );
+  }
 
   const declared = Number(request.headers.get("content-length"));
   if (
@@ -28,12 +31,14 @@ export async function PUT(request: Request, context: { params: Promise<{ token: 
     declared !== claims.contentLength ||
     declared > MAX_UPLOAD_BYTES
   ) {
+    logSecurityEvent("upload.rejected", { reason: "size_mismatch" });
     return NextResponse.json(
       { error: "The file size doesn't match what was approved." },
       { status: 413 },
     );
   }
   if (request.headers.get("content-type")?.split(";")[0] !== claims.contentType) {
+    logSecurityEvent("upload.rejected", { reason: "type_mismatch" });
     return NextResponse.json(
       { error: "The file type doesn't match what was approved." },
       { status: 415 },

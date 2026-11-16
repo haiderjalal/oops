@@ -1,6 +1,5 @@
 "use server";
 
-import { updateTag } from "next/cache";
 import { z } from "zod";
 
 import { getDb } from "@/lib/db/client";
@@ -9,16 +8,9 @@ import type { ActionResult } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { runOwnerAction } from "@/lib/actions";
 
-import { CACHE_TAGS } from "./cacheTags";
 import { placeIdSchema, placeInputSchema } from "./schema";
 import { type SavedPlace, createPlace, deletePlace, restorePlace, updatePlace } from "./service";
-
-/** Everything public pages cache depends on places, trips and bucket links. */
-function invalidatePublicContent(): void {
-  updateTag(CACHE_TAGS.places);
-  updateTag(CACHE_TAGS.trips);
-  updateTag(CACHE_TAGS.bucket);
-}
+import { invalidatePublicContent } from "./revalidatePublic";
 
 const saveSchema = z.object({ id: z.uuid().optional(), values: placeInputSchema });
 

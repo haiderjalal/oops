@@ -3,12 +3,22 @@ import "server-only";
 import { headers } from "next/headers";
 
 import { AppError } from "@/lib/errors";
+import { logSecurityEvent } from "@/lib/security-log";
 
-/** Best-effort client address for rate limiting. Behind a trusted proxy the first hop is the client. */
+/**
+ * The client address used for rate limiting. Each proxy appends to `x-forwarded-for`, so the LAST
+ * entry is the one our platform's proxy saw. The first entry is written by the client and could be
+ * forged on every request to get a fresh rate-limit bucket each time.
+ */
 export async function getClientAddress(): Promise<string> {
   const list = await headers();
-  const forwarded = list.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || list.get("x-real-ip") || "unknown";
+  const forwarded = list
+    .get("x-forwarded-for")
+    ?.split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .pop();
+  return (forwarded || list.get("x-real-ip") || "unknown").slice(0, 64);
 }
 
 /**
@@ -23,9 +33,18 @@ export function assertSameOrigin(request: Request): void {
   try {
     originHost = new URL(origin).host;
   } catch {
+    logSecurityEvent("csrf.rejected", {
+      reason: "unparseable_origin",
+      origin: origin.slice(0, 200),
+    });
     throw new AppError("unauthorized", "Cross-site requests are not allowed.", { status: 403 });
   }
   if (host && originHost !== host) {
+    logSecurityEvent("csrf.rejected", {
+      reason: "origin_mismatch",
+      origin: origin.slice(0, 200),
+      path: new URL(request.url).pathname,
+    });
     throw new AppError("unauthorized", "Cross-site requests are not allowed.", { status: 403 });
   }
 }

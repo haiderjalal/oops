@@ -6,6 +6,7 @@ import { AppError, RateLimitError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { getRateLimiter } from "@/lib/rate-limit";
 import { assertSameOrigin } from "@/lib/request";
+import { logSecurityEvent } from "@/lib/security-log";
 import { getGeocoder } from "@/features/search/provider";
 
 const querySchema = z.object({ q: z.string().trim().min(2).max(120) });
@@ -30,8 +31,10 @@ export async function GET(request: Request) {
     }
 
     const check = limiter().check(session.email);
-    if (!check.ok)
+    if (!check.ok) {
+      logSecurityEvent("geocode.rate_limited");
       throw new RateLimitError(check.retryAfterSeconds, "Searching too fast — give it a moment.");
+    }
 
     const geocoder = getGeocoder();
     const results = await geocoder.search(parsed.data.q, { limit: 6, signal: request.signal });

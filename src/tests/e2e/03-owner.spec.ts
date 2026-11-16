@@ -122,10 +122,12 @@ test.describe
 
     await altField.fill("A pastel de nata on a blue-and-white tile table");
     await page.getByRole("button", { name: "Publish" }).click();
-    await expect(page.getByText("Saved and published. Visitors can see it now.")).toBeVisible({
+    // A new place moves to its edit page once saved. Check the saved state there, not the short-lived
+    // status message, which the navigation replaces.
+    await expect(page).toHaveURL(/\/admin\/places\/[0-9a-f-]{36}\/edit/, { timeout: 20_000 });
+    await expect(page.getByRole("button", { name: "Move back to draft" })).toBeVisible({
       timeout: 20_000,
     });
-    await expect(page).toHaveURL(/\/admin\/places\/[0-9a-f-]{36}\/edit/);
     editUrl = page.url();
   });
 

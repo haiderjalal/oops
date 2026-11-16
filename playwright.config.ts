@@ -40,6 +40,22 @@ export default defineConfig({
     timeout: 360_000,
     reuseExistingServer: !process.env.CI,
     env: {
+      // Next.js loads .env.local into every process, and a variable that is set here (even to an
+      // empty string) is not overridden by it. Blanking every provider setting keeps these tests on
+      // the in-memory database and the offline map, never on a real database or storage bucket.
+      DATABASE_URL: "",
+      MAPTILER_PUBLIC_KEY: "",
+      MAPTILER_GEOCODING_KEY: "",
+      MAP_STYLE_URL: "",
+      MAP_CSP_ORIGINS: "",
+      S3_ENDPOINT: "",
+      S3_REGION: "",
+      S3_BUCKET: "",
+      S3_ACCESS_KEY_ID: "",
+      S3_SECRET_ACCESS_KEY: "",
+      S3_PUBLIC_BASE_URL: "",
+      S3_FORCE_PATH_STYLE: "",
+      AUTH_ALLOW_PASSWORD_ONLY: "",
       SITE_URL: `http://localhost:${PORT}`,
       ALLOW_LOCAL_SERVICES: "true",
       EMBEDDED_DB_DIR: "memory",

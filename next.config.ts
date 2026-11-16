@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
-const isDev = process.env.NODE_ENV !== "production";
+import { OWNER_ONLY_HEADERS, securityHeaders } from "./src/lib/security-headers";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 /** Returns the origin of a URL, or null when the value is empty or not a valid absolute URL. */
 function originOf(value: string | undefined): string | null {
@@ -32,34 +34,6 @@ const storageOrigins = [originOf(storagePublicBase), originOf(process.env.S3_END
   (origin): origin is string => Boolean(origin),
 );
 
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  // Next.js hydration uses inline scripts. A nonce-based policy would force every page to
-  // render dynamically and defeat static caching, so we accept 'unsafe-inline' for scripts
-  // and compensate with the restrictive directives below.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${[...mapOrigins, ...storageOrigins].join(" ")}`.trim(),
-  "font-src 'self' data:",
-  `connect-src 'self' blob: ${[...mapOrigins, ...storageOrigins].join(" ")}`.trim(),
-  "worker-src 'self' blob:",
-  "child-src 'self' blob:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
-].join("; ");
-
-const securityHeaders = [
-  { key: "Content-Security-Policy", value: contentSecurityPolicy },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self), payment=()" },
-  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-];
-
 function storageImagePattern(): NonNullable<NextConfig["images"]>["remotePatterns"] {
   if (!storagePublicBase) return [];
   try {
@@ -83,6 +57,8 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // Never publish source maps: they would expose the application source to anyone.
+  productionBrowserSourceMaps: false,
   // PGlite is the embedded Postgres used for zero-config local development and tests.
   // It loads WASM assets from disk, so it must not be bundled.
   serverExternalPackages: ["@electric-sql/pglite"],
@@ -101,8 +77,13 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
+    const origins = [...mapOrigins, ...storageOrigins];
     return [
-      { source: "/:path*", headers: securityHeaders },
+      { source: "/:path*", headers: securityHeaders({ isProduction, origins }) },
+      // Owner-only surfaces: no cross-site reads, in addition to the session checks.
+      { source: "/admin/:path*", headers: OWNER_ONLY_HEADERS },
+      { source: "/api/geocode", headers: OWNER_ONLY_HEADERS },
+      { source: "/api/uploads/:path*", headers: OWNER_ONLY_HEADERS },
       {
         // The offline atlas is static and versioned by filename; cache it aggressively.
         source: "/data/:path*",
